@@ -3,7 +3,6 @@ import math
 
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
-
 # initialized with the polynomial, and the seed are added dynamically
 class lfsr(list):
   def get_seed(self):
@@ -41,7 +40,7 @@ def run_correlation_attack(qi, p0, c, z):
   # TODO: do we need all of theese calculations
   pe = 1 - (p0 + qi) + 2 * p0 * qi
   l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
-  pf = 0.05  # This can be adjusted, or the Pm can be determined, and the whole thing reversed a bit (might be better?)
+  pf = 0.01  # This can be adjusted, or the Pm can be determined, and the whole thing reversed a bit (might be better?)
   T = norm.ppf(1 - pf) * math.sqrt(l)  # and norm.ppf(norm.cdf(1.96))
   pm = 1 - norm.cdf((l * (2 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
   Ri = pow(2, z.get_degree())
@@ -67,32 +66,45 @@ def bitgen(x):
 
 
 def task1():
-  print("[TASK1]: Generating keystream")
-  z1 = lfsr([9, 6, 4, 3, 1])  # x^11+x^7+x^3+x+1
-  z2 = lfsr([10, 7, 3, 1])  # x^11+x^7+x^3+x+1
-  z3 = lfsr([8, 6, 5, 2, 1])  # x^11+x^7+x^3+x+1
+  print("[TASK1]: Generating ciphertext")
+  z1 = lfsr([10, 7, 3, 1])
+  z2 = lfsr([20, 15, 12, 8, 6, 5])
+  z3 = lfsr([11, 7, 3, 1])
 
-  # z2 = lfsr([20, 15, 12, 8, 6, 5])                      # x^20+x^15+x^12+x^8+x^6+x^5+1
-  # z3 = lfsr([15, 14, 13, 12, 11, 9, 8, 7, 5, 4, 2, 1])  # x^15+x^14+x^13+x^12+x^11+x^9+x^8+x^7+x^5+x^4+x^2+x+1
   # set the key / seed values for the LFSR's (needs to be less than 2^(length of LFSR)
   # THis is the key (such secrecy):
-  z1.set_seed(1)
-  z2.set_seed(2)
-  z3.set_seed(3)
+  z1.set_seed(602)
+  z2.set_seed(148)
+  z3.set_seed(901)
 
   c = []
 
   # This is fast ish?
-  for y in bitgen(open("500_example.txt", "rb").read()):  # This is a generator object
+  for y in bitgen(open("example.txt", "rb").read()):  # This is a generator object
     c.append(y ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
   return c
 
 
-def task2(c):
-  z1 = lfsr([9, 6, 4, 3, 1])  # x^11+x^7+x^3+x+1
-  z2 = lfsr([10, 7, 3, 1])  # x^11+x^7+x^3+x+1
-  z3 = lfsr([8, 6, 5, 2, 1])  # x^11+x^7+x^3+x+1
+def bits2string(bits=None):  # This function is taken from https://stackoverflow.com/a/10238140
+  chars = []
+  for b in range(len(bits) // 8):
+    byte = bits[b * 8:(b + 1) * 8]
+    chars.append(chr(int(''.join([str(bit) for bit in byte]), 2)))
+  return ''.join(chars)
 
+
+def entropy(string):  # This function is taken from https://stackoverflow.com/a/2979208
+  # get probability of chars in string
+  prob = [float(string.count(c)) / len(string) for c in dict.fromkeys(list(string))]
+  # calculate the entropy
+  entropy = - sum([p * math.log(p) / math.log(2.0) for p in prob])
+  return entropy
+
+
+def task2(c):
+  z1 = lfsr([10, 7, 3, 1])
+  z2 = lfsr([20, 15, 12, 8, 6, 5])                      # x^20+x^15+x^12+x^8+x^6+x^5+1
+  z3 = lfsr([11, 7, 3, 1])
   q = [0, 0, 0]
 
   # Check correlation from truth table of the boolean combiner function
@@ -103,34 +115,37 @@ def task2(c):
       if x[j] == f:
         q[j] += 1
   q = [i / 8 for i in q]
-  print(q)
-  p0 = 0.6  # TODO We know this value from the probability of the input language (feks. english ASCII)
 
-  # Can we multithread this --> How ti get the return value?
-  z1_cand = run_correlation_attack(q[0], p0, c, z1)  # Do we need just one?
+  p0 = 0.6  # TODO We know this value from the probability of the input language (e.g. english ASCII)
+
+  # Can we multithread this --> How to get the return value -> Is there something easier?
+  print("[TASK2]: Running correlation attack on z1")
+  z1_cand = run_correlation_attack(q[0], p0, c, z1)
+
+  print("[TASK2]: Running correlation attack on z3")
   z3_cand = run_correlation_attack(q[2], p0, c, z3)
+
+  print(z1_cand)
+  print(z3_cand)
 
   # Bruteforce z2, now that we know the value of z1 and z3
   print("[TASK2]: Commencing bruteforce of z2")
-  print(z1_cand, z3_cand)
-  for z1_s in range(1, pow(2, z2.get_degree()) + 1):
+  for z2_s in range(1, pow(2, z2.get_degree()) + 1):
     for z1_c in z1_cand:
       for z3_c in z3_cand:
-        crnt_key_strm = []
+        y = []
         z1.set_seed(z1_c)
-        z2.set_seed(z1_s)
+        z2.set_seed(z2_s)
         z3.set_seed(z3_c)
 
-        for _ in range(len(c)):
-          crnt_key_strm.append(gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
-        if crnt_key_strm == c:
-          print("[TASK2]: The seeds are:\nz1:{}\nz2:{}\nz3:{}".format(z1.get_seed(), i, z3.get_seed()))
-          return
-    print(z1_s)
-
+        for ci in c:
+          y.append(ci ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
+        # Standard English text usually falls somewhere between 3.5 and 5.0 in shannons entrophy
+        if 5.0 >= entropy(bits2string(y)) >= 3.5:
+          print("[TASK 2]: Candidate seeds - Z1:{} Z2:{} Z3:{} ".format(z1_c, z2_s, z3_c))
+    print(z2_s)
 
 # The program starts here
 if __name__ == "__main__":
   c = task1()
-  print(sum([i ^ 0 for i in c]) / len(c))  # This cannot be 0.5
   task2(c)
