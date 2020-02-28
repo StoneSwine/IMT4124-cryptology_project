@@ -84,7 +84,7 @@ def task1():
   c = []
 
   # This is fast ish?
-  for y in bitgen(open("example.txt", "rb").read()):  # This is a generator object
+  for y in bitgen(open("5000_example.txt", "rb").read()):  # This is a generator object
     c.append(y ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
   return c
 
@@ -125,12 +125,11 @@ def task2(c):
   # Can we multithread this --> How to get the return value -> Is there something easier?
   print("[TASK2]: Running correlation attack on z1")
   z1_cand = run_correlation_attack(q[0], p0, c, z1)
+  print("[TASK2:] z1-candidates: {}".format(z1_cand))
 
   print("[TASK2]: Running correlation attack on z3")
   z3_cand = run_correlation_attack(q[2], p0, c, z3)
-
-  print(z1_cand)
-  print(z3_cand)
+  print("[TASK2:] z3-candidates: {}".format(z3_cand))
 
   # Bruteforce z2, now that we know the value of z1 and z3
   print("[TASK2]: Commencing bruteforce of z2")
@@ -147,8 +146,7 @@ def task2(c):
         # Standard English text usually falls somewhere between 3.5 and 5.0 in shannons entrophy
         ent = entropy(bits2string(y))
         if 5.0 >= ent >= 3.5:
-          print("[TASK 2]: Candidate seeds - Z1:{} Z2:{} Z3:{} - entropy of text: {}".format(z1_c, z2_s, z3_c, ent))
-          return
+          print("[TASK 2]: Candidate seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {}".format(z1_c, z2_s, z3_c, ent))
 
 # The program starts here
 if __name__ == "__main__":
