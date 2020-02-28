@@ -1,10 +1,14 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 import math
-
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
 # initialized with the polynomial, and the seed are added dynamically
 class lfsr(list):
+
+  def  __init__(self,l):
+    super().__init__(l)
+    self.degree = max(l)
+
   def get_seed(self):
     return self.start_val
 
@@ -16,13 +20,13 @@ class lfsr(list):
     b = ((self.reg >> self[0] - 1) & 1)  # get the first bit to XOR
     for p in self[1:]:  # loop the polynomial degrees (index of bits to xor)
       b ^= ((self.reg >> p - 1) & 1)  # shift the register accordingly and get the LSbit to XOR with the other ones
-    self.reg = (self.reg >> 1 | b << (max(self) - 1))  # Shift the register and apply the new bit (will also pad)
+    self.reg = (self.reg >> 1 | b << (self.degree - 1))  # Shift the register and apply the new bit (will also pad)
     # TODO: How to determine the length of the LFSR register?
     # Assumes it is as long as the degree of the polynomial-1
     return out
 
   def get_degree(self):
-    return max(self)
+    return self.degree
 
   def get_x_rounds(self, x=1):
     o_a = []
@@ -40,11 +44,11 @@ def run_correlation_attack(qi, p0, c, z):
   # TODO: do we need all of theese calculations
   pe = 1 - (p0 + qi) + 2 * p0 * qi
   l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
-  pf = 0.01  # This can be adjusted, or the Pm can be determined, and the whole thing reversed a bit (might be better?)
+  pf = 0.0001  # This can be adjusted, or the Pm can be determined, and the whole thing reversed a bit (might be better?)
   T = norm.ppf(1 - pf) * math.sqrt(l)  # and norm.ppf(norm.cdf(1.96))
   pm = 1 - norm.cdf((l * (2 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
   Ri = pow(2, z.get_degree())
-  print("pe: {}\npm: {}\npf: {}\nl: {}\nT: {}\nRi: {}".format(pe, pm, pf, l, T, Ri))
+  print("[TASK2]: pe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {}\n\tRi: {}".format(pe, pm, pf, l, T, Ri))
 
   for i in range(1, Ri):
     z.set_seed(i)
@@ -73,9 +77,9 @@ def task1():
 
   # set the key / seed values for the LFSR's (needs to be less than 2^(length of LFSR)
   # THis is the key (such secrecy):
-  z1.set_seed(602)
-  z2.set_seed(148)
-  z3.set_seed(901)
+  z1.set_seed(782)
+  z2.set_seed(16)
+  z3.set_seed(678)
 
   c = []
 
@@ -103,7 +107,7 @@ def entropy(string):  # This function is taken from https://stackoverflow.com/a/
 
 def task2(c):
   z1 = lfsr([10, 7, 3, 1])
-  z2 = lfsr([20, 15, 12, 8, 6, 5])                      # x^20+x^15+x^12+x^8+x^6+x^5+1
+  z2 = lfsr([20, 15, 12, 8, 6, 5])
   z3 = lfsr([11, 7, 3, 1])
   q = [0, 0, 0]
 
@@ -141,9 +145,10 @@ def task2(c):
         for ci in c:
           y.append(ci ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
         # Standard English text usually falls somewhere between 3.5 and 5.0 in shannons entrophy
-        if 5.0 >= entropy(bits2string(y)) >= 3.5:
-          print("[TASK 2]: Candidate seeds - Z1:{} Z2:{} Z3:{} ".format(z1_c, z2_s, z3_c))
-    print(z2_s)
+        ent = entropy(bits2string(y))
+        if 5.0 >= ent >= 3.5:
+          print("[TASK 2]: Candidate seeds - Z1:{} Z2:{} Z3:{} - entropy of text: {}".format(z1_c, z2_s, z3_c, ent))
+          return
 
 # The program starts here
 if __name__ == "__main__":
