@@ -1,6 +1,12 @@
-#!/usr/bin/env python3
+#!/nusr/bin/env python3
 import math
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
+
+# GLOBAL VARIABLES
+INFILE="2000_example.txt"
+Z1S=123
+Z2S=90
+Z3S=577
 
 # initialized with the polynomial, and the seed are added dynamically
 class lfsr(list):
@@ -44,25 +50,21 @@ def run_correlation_attack(qi, p0, c, z):
   # TODO: do we need all of theese calculations
   pe = 1 - (p0 + qi) + 2 * p0 * qi
   l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
-  pf = 0.0001  # This can be adjusted, or the Pm can be determined, and the whole thing reversed a bit (might be better?)
-  T = norm.ppf(1 - pf) * math.sqrt(l)  # and norm.ppf(norm.cdf(1.96))
-  pm = 1 - norm.cdf((l * (2 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
+  pf = 0.001  # This can be adjusted, or the Pm can be determined, and the whole thing reversed a bit (might be better?)
+  T = norm.ppf(1 - pf) * math.sqrt(l)
+  pm = 1 - norm.cdf((l * (3 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
   Ri = pow(2, z.get_degree())
   print("[TASK2]: pe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {}\n\tRi: {}".format(pe, pm, pf, l, T, Ri))
 
   for i in range(1, Ri):
     z.set_seed(i)
-    ham_d = 0
-    for n in range(l):
-      ham_d += c[n] ^ z.next_o()
-
+    ham_d = sum([ci ^ z.next_o() for ci in c])
     if l - (2 * ham_d) >= T:
       candidates.append(i)
 
   return candidates
 
-
-# Generate bits from an input (bytes)
+# Generate bits from an input (bytes) => Generator object
 def bitgen(x):
   for c in x:
     for i in range(8):
@@ -77,14 +79,13 @@ def task1():
 
   # set the key / seed values for the LFSR's (needs to be less than 2^(length of LFSR)
   # THis is the key (such secrecy):
-  z1.set_seed(782)
-  z2.set_seed(16)
-  z3.set_seed(678)
+  z1.set_seed(Z1S)
+  z2.set_seed(Z2S)
+  z3.set_seed(Z3S)
 
   c = []
 
-  # This is fast ish?
-  for y in bitgen(open("5000_example.txt", "rb").read()):  # This is a generator object
+  for y in bitgen(open(INFILE, "rb").read()):
     c.append(y ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
   return c
 
@@ -145,10 +146,11 @@ def task2(c):
           y.append(ci ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
         # Standard English text usually falls somewhere between 3.5 and 5.0 in shannons entrophy
         ent = entropy(bits2string(y))
-        if 5.0 >= ent >= 3.5:
-          print("[TASK 2]: Candidate seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {}".format(z1_c, z2_s, z3_c, ent))
+        if ent >= 3.5 and ent <= 5:
+          print("[TASK2]: Candidate seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {}".format(z1_c, z2_s, z3_c, ent))
 
 # The program starts here
 if __name__ == "__main__":
   c = task1()
   task2(c)
+
