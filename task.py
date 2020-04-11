@@ -1,9 +1,9 @@
-#!/nusr/bin/env python3
+#!/usr/bin/env python3
 import math
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
 # GLOBAL VARIABLES
-INFILE="2000_example.txt"
+INFILE="1000_example.txt"
 Z1S=123
 Z2S=90
 Z3S=577
@@ -36,7 +36,7 @@ class lfsr(list):
 
   def get_x_rounds(self, x=1):
     o_a = []
-    for i in range(x):
+    for _ in range(x):
       o_a.append(self.next_o())
     return o_a
 
@@ -47,19 +47,20 @@ def gg_combining_function(z1, z2, z3):
 
 def run_correlation_attack(qi, p0, c, z):
   candidates = []
-  # TODO: do we need all of theese calculations
   pe = 1 - (p0 + qi) + 2 * p0 * qi
   l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
-  pf = 0.001  # This can be adjusted, or the Pm can be determined, and the whole thing reversed a bit (might be better?)
+  pf = 0.002  # This can be adjusted
   T = norm.ppf(1 - pf) * math.sqrt(l)
   pm = 1 - norm.cdf((l * (3 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
   Ri = pow(2, z.get_degree())
-  print("[TASK2]: pe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {}\n\tRi: {}".format(pe, pm, pf, l, T, Ri))
-
+  print("[TASK2]: Information about variables:\n\tpe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {}\n\tRi: {}".format(pe, pm, pf, l, T, Ri))
+  print("[TASK2]: Seed | Alpha")
   for i in range(1, Ri):
     z.set_seed(i)
     ham_d = sum([ci ^ z.next_o() for ci in c])
-    if l - (2 * ham_d) >= T:
+    alpha=l - (2 * ham_d)
+    if alpha >= T:
+      print("[TASK2]: {}  | {}".format(i, alpha))
       candidates.append(i)
 
   return candidates
@@ -107,6 +108,7 @@ def entropy(string):  # This function is taken from https://stackoverflow.com/a/
 
 
 def task2(c):
+  # The polynomials are known to the cryptanalyst
   z1 = lfsr([10, 7, 3, 1])
   z2 = lfsr([20, 15, 12, 8, 6, 5])
   z3 = lfsr([11, 7, 3, 1])
@@ -126,7 +128,7 @@ def task2(c):
   # Can we multithread this --> How to get the return value -> Is there something easier?
   print("[TASK2]: Running correlation attack on z1")
   z1_cand = run_correlation_attack(q[0], p0, c, z1)
-  print("[TASK2:] z1-candidates: {}".format(z1_cand))
+  print("[TASK2]: z1-candidates: {}".format(z1_cand))
 
   print("[TASK2]: Running correlation attack on z3")
   z3_cand = run_correlation_attack(q[2], p0, c, z3)
@@ -137,6 +139,7 @@ def task2(c):
   for z2_s in range(1, pow(2, z2.get_degree()) + 1):
     for z1_c in z1_cand:
       for z3_c in z3_cand:
+        print("[TASK2]: Testing {}, {} and {}".format(z1_c, z2_s, z3_c),end="\r")
         y = []
         z1.set_seed(z1_c)
         z2.set_seed(z2_s)
@@ -147,10 +150,11 @@ def task2(c):
         # Standard English text usually falls somewhere between 3.5 and 5.0 in shannons entrophy
         ent = entropy(bits2string(y))
         if ent >= 3.5 and ent <= 5:
-          print("[TASK2]: Candidate seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {}".format(z1_c, z2_s, z3_c, ent))
+          print("[TASK2]: Possible seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {:.4f}".format(z1_c, z2_s, z3_c, ent))
 
 # The program starts here
 if __name__ == "__main__":
   c = task1()
+  print("- "*20)
   task2(c)
-
+  print("- "*20)
