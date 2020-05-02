@@ -56,6 +56,11 @@ class lfsr(list):
     return o_a
 
 
+"""
+HELPER FUNCTIONS
+"""
+
+
 def gg_combining_function(z1, z2, z3):
   return (z3 ^ (z1 & z2) ^ (z2 & z3))
 
@@ -80,11 +85,6 @@ def run_correlation_attack(qi, p0, c, z):
       candidates.append(i)
 
   return candidates
-
-
-"""
-HELPER FUNCTIONS
-"""
 
 
 # Generate bits from an input (bytes) => Generator object
