@@ -11,9 +11,14 @@ Z1S = 123
 Z2S = 90
 Z3S = 577
 
+"""
+LFSR CLASS
+"""
 
-# initialized with the polynomial, and the seed are added dynamically
+
 class lfsr(list):
+  """initialized with the polynomial, and the seed are added dynamically
+  """
 
   def __init__(self, l):
     super().__init__(l)
@@ -77,6 +82,11 @@ def run_correlation_attack(qi, p0, c, z):
   return candidates
 
 
+"""
+HELPER FUNCTIONS
+"""
+
+
 # Generate bits from an input (bytes) => Generator object
 def bitgen(x):
   for c in x:
@@ -98,6 +108,11 @@ def entropy(string):  # This function is taken from https://stackoverflow.com/a/
   # calculate the entropy
   entropy = - sum([p * math.log(p) / math.log(2.0) for p in prob])
   return entropy
+
+
+"""
+THE MAIN TASKS
+"""
 
 
 def task1(plaintextfile, seeds):
@@ -179,6 +194,10 @@ def task3(c):
 def task4():
   pass
 
+
+"""
+MAIN
+"""
 
 if __name__ == "__main__":
   INFILE = os.path.join(os.path.dirname(__file__), INFILE)
