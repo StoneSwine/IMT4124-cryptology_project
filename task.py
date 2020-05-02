@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 import math
+
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
 # GLOBAL VARIABLES
-INFILE="1000_example.txt"
-Z1S=123
-Z2S=90
-Z3S=577
+INFILE = "1000_example.txt"
+Z1S = 123
+Z2S = 90
+Z3S = 577
+
 
 # initialized with the polynomial, and the seed are added dynamically
 class lfsr(list):
 
-  def  __init__(self,l):
+  def __init__(self, l):
     super().__init__(l)
     self.degree = max(l)
 
@@ -53,42 +55,26 @@ def run_correlation_attack(qi, p0, c, z):
   T = norm.ppf(1 - pf) * math.sqrt(l)
   pm = 1 - norm.cdf((l * (3 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
   Ri = pow(2, z.get_degree())
-  print("[TASK2]: Information about variables:\n\tpe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {}\n\tRi: {}".format(pe, pm, pf, l, T, Ri))
+  print(
+    "[TASK2]: Information about variables:\n\tpe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {}\n\tRi: {}".format(pe, pm, pf,
+                                                                                                             l, T, Ri))
   print("[TASK2]: Seed | Alpha")
   for i in range(1, Ri):
     z.set_seed(i)
     ham_d = sum([ci ^ z.next_o() for ci in c])
-    alpha=l - (2 * ham_d)
+    alpha = l - (2 * ham_d)
     if alpha >= T:
       print("[TASK2]: {}  | {}".format(i, alpha))
       candidates.append(i)
 
   return candidates
 
+
 # Generate bits from an input (bytes) => Generator object
 def bitgen(x):
   for c in x:
     for i in range(8):
       yield int((c & (0x80 >> i)) != 0)
-
-
-def task1():
-  print("[TASK1]: Generating ciphertext")
-  z1 = lfsr([10, 7, 3, 1])
-  z2 = lfsr([20, 15, 12, 8, 6, 5])
-  z3 = lfsr([11, 7, 3, 1])
-
-  # set the key / seed values for the LFSR's (needs to be less than 2^(length of LFSR)
-  # THis is the key (such secrecy):
-  z1.set_seed(Z1S)
-  z2.set_seed(Z2S)
-  z3.set_seed(Z3S)
-
-  c = []
-
-  for y in bitgen(open(INFILE, "rb").read()):
-    c.append(y ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
-  return c
 
 
 def bits2string(bits=None):  # This function is taken from https://stackoverflow.com/a/10238140
@@ -105,6 +91,25 @@ def entropy(string):  # This function is taken from https://stackoverflow.com/a/
   # calculate the entropy
   entropy = - sum([p * math.log(p) / math.log(2.0) for p in prob])
   return entropy
+
+
+def task1(plaintextfile, seeds):
+  print("[TASK1]: Generating ciphertext")
+  z1 = lfsr([10, 7, 3, 1])
+  z2 = lfsr([20, 15, 12, 8, 6, 5])
+  z3 = lfsr([11, 7, 3, 1])
+
+  # set the key / seed values for the LFSR's (needs to be less than 2^(length of LFSR)
+  # THis is the key!:
+  z1.set_seed(seeds[0])
+  z2.set_seed(seeds[1])
+  z3.set_seed(seeds[2])
+
+  c = []
+
+  for y in bitgen(open(plaintextfile, "rb").read()):
+    c.append(y ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
+  return c
 
 
 def task2(c):
@@ -139,7 +144,7 @@ def task2(c):
   for z2_s in range(1, pow(2, z2.get_degree()) + 1):
     for z1_c in z1_cand:
       for z3_c in z3_cand:
-        print("[TASK2]: Testing {}, {} and {}".format(z1_c, z2_s, z3_c),end="\r")
+        print("[TASK2]: Testing {}, {} and {}".format(z1_c, z2_s, z3_c), end="\r")
         y = []
         z1.set_seed(z1_c)
         z2.set_seed(z2_s)
@@ -150,11 +155,18 @@ def task2(c):
         # Standard English text usually falls somewhere between 3.5 and 5.0 in shannons entrophy
         ent = entropy(bits2string(y))
         if ent >= 3.5 and ent <= 5:
-          print("[TASK2]: Possible seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {:.4f}".format(z1_c, z2_s, z3_c, ent))
+          print(
+            "[TASK2]: Possible seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {:.4f}".format(z1_c, z2_s, z3_c, ent))
+
 
 # The program starts here
+def task3():
+  pass
+
+
 if __name__ == "__main__":
-  c = task1()
-  print("- "*20)
+  c = task1(INFILE, [Z1S, Z2S, Z3S])  # Geffe's generator
+  print("- " * 20)
   task2(c)
-  print("- "*20)
+  print("- " * 20)
+  task3()
