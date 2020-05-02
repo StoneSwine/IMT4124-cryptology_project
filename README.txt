@@ -14,6 +14,7 @@ $ python3 task.py # run the program
 
 ## Implementation:
 The function 'task1' reads plaintext from the file specified in the global variable 'INFILE' and returns the ciphertext as an array of bits.
+Where the key (initial state) specified in the global variables 'Z{1,2,3}S'.
 The class 'lfsr' is the implementation of a left shift feedback register (LFSR) and is initialized with an array 'l' that represents the
 polynomial connections. It is assumed that '1' is always a part of the polynomail, and thus not a part of the array. Considering the
 primitive polynomail 'x⁴+x+1' the corresponding initializing array would be '[4,1]'. A lfsr instance is responsible for its own output bits (period),
@@ -21,17 +22,16 @@ genertated by the function 'next_o'. Three LFSRs classes are initialized before 
 sequence generated from the combining function defined in 'gg_combining_function'.
 
 Several different texts are provided in the repository for testing purposes. In order to make the plaintext as realistic to human written text as possible
-text from various wikipedia articles have been concatinated into the file 'example.txt'. Smaller files have been derived from this one to test the
-program with smaller file sizes. The files '{1,2,3,4,5}000_example.txt' contains the respective first 1000 - 5000 characters.
+text from various wikipedia articles have been concatinated into the files '{1,2,3,4,5}000_example.txt'. The files contains 1000 - 5000 characters, to demonstrate different lengths of input files.
 
-# TASK 2:
+# TASK 3:
 ## The task: 
 
 
 ## Implementation:
 
 
-# TASK 3:
+# TASK 4:
 ## The task:
 
 
