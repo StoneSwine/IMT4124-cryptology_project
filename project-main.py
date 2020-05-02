@@ -4,7 +4,7 @@ import math
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
 # GLOBAL VARIABLES
-INFILE = "1000_example.txt"
+INFILE = "plaintextfiles/1000_example.txt"
 Z1S = 123
 Z2S = 90
 Z3S = 577
@@ -56,15 +56,17 @@ def run_correlation_attack(qi, p0, c, z):
   pm = 1 - norm.cdf((l * (3 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
   Ri = pow(2, z.get_degree())
   print(
-    "[TASK2]: Information about variables:\n\tpe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {}\n\tRi: {}".format(pe, pm, pf,
-                                                                                                             l, T, Ri))
-  print("[TASK2]: Seed | Alpha")
+    "[TASK3]: Information about variables:\n\tpe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {:.1f}\n\tRi: {}".format(pe, pm,
+                                                                                                                 pf,
+                                                                                                                 l, T,
+                                                                                                                 Ri))
+  print("[TASK3]: Seed | Alpha")
   for i in range(1, Ri):
     z.set_seed(i)
     ham_d = sum([ci ^ z.next_o() for ci in c])
     alpha = l - (2 * ham_d)
     if alpha >= T:
-      print("[TASK2]: {}  | {}".format(i, alpha))
+      print("[TASK3]: {}  | {}".format(i, alpha))
       candidates.append(i)
 
   return candidates
@@ -94,7 +96,7 @@ def entropy(string):  # This function is taken from https://stackoverflow.com/a/
 
 
 def task1(plaintextfile, seeds):
-  print("[TASK1]: Generating ciphertext")
+  print("[TASK1]: Initial setup of polynomials..")
   z1 = lfsr([10, 7, 3, 1])
   z2 = lfsr([20, 15, 12, 8, 6, 5])
   z3 = lfsr([11, 7, 3, 1])
@@ -106,20 +108,20 @@ def task1(plaintextfile, seeds):
   z3.set_seed(seeds[2])
 
   c = []
-
+  print("[TASK1]: Generating ciphertext from", plaintextfile, "with Geffes generator")
   for y in bitgen(open(plaintextfile, "rb").read()):
     c.append(y ^ gg_combining_function(z1.next_o(), z2.next_o(), z3.next_o()))
   return c
 
 
-def task2(c):
+def task3(c):
   # The polynomials are known to the cryptanalyst
   z1 = lfsr([10, 7, 3, 1])
   z2 = lfsr([20, 15, 12, 8, 6, 5])
   z3 = lfsr([11, 7, 3, 1])
   q = [0, 0, 0]
 
-  # Check correlation from truth table of the boolean combiner function
+  # Check correlation from truth table of the combiner function
   for i in range(8):
     x = list(map(int, bin(i)[2:].zfill(3)))
     f = gg_combining_function(x[0], x[1], x[2])
@@ -127,24 +129,26 @@ def task2(c):
       if x[j] == f:
         q[j] += 1
   q = [i / 8 for i in q]
+  print("[TASK3]: correlation from thruth table z1,z2,z3 -> ", q)
 
   p0 = 0.6  # TODO We know this value from the probability of the input language (e.g. english ASCII)
 
   # Can we multithread this --> How to get the return value -> Is there something easier?
-  print("[TASK2]: Running correlation attack on z1")
+  print("[TASK3]: Running correlation attack on z1")
   z1_cand = run_correlation_attack(q[0], p0, c, z1)
-  print("[TASK2]: z1-candidates: {}".format(z1_cand))
-
-  print("[TASK2]: Running correlation attack on z3")
+  print("[TASK3]: z1-candidates: {}".format(z1_cand))
+  print("- " * 10)
+  print("[TASK3]: Running correlation attack on z3")
   z3_cand = run_correlation_attack(q[2], p0, c, z3)
-  print("[TASK2:] z3-candidates: {}".format(z3_cand))
-
+  print("[TASK3]: z3-candidates: {}".format(z3_cand))
+  print("- " * 10)
   # Bruteforce z2, now that we know the value of z1 and z3
-  print("[TASK2]: Commencing bruteforce of z2")
+  print("[TASK3]: Commencing bruteforce of z2")
+  print("[TASK3]: Using shannons entrophy to determine the plaintext")
   for z2_s in range(1, pow(2, z2.get_degree()) + 1):
     for z1_c in z1_cand:
       for z3_c in z3_cand:
-        print("[TASK2]: Testing {}, {} and {}".format(z1_c, z2_s, z3_c), end="\r")
+        print("[TASK3]: Testing {}, {} and {}".format(z1_c, z2_s, z3_c), end="\r")
         y = []
         z1.set_seed(z1_c)
         z2.set_seed(z2_s)
@@ -156,17 +160,18 @@ def task2(c):
         ent = entropy(bits2string(y))
         if ent >= 3.5 and ent <= 5:
           print(
-            "[TASK2]: Possible seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {:.4f}".format(z1_c, z2_s, z3_c, ent))
+            "[TASK3]: Possible seeds | Z1:{} | Z2:{} | Z3:{} | entropy of text: {:.2f}".format(z1_c, z2_s, z3_c, ent))
 
 
 # The program starts here
-def task3():
+def task4():
   pass
 
 
 if __name__ == "__main__":
+  print(" TASK 1 ".center(30, "#"))
   c = task1(INFILE, [Z1S, Z2S, Z3S])  # Geffe's generator
-  print("- " * 20)
-  task2(c)
-  print("- " * 20)
-  task3()
+  print(" TASK 3 ".center(30, "#"))
+  task3(c)
+  print(" TASK 4 ".center(30, "#"))
+  task4()
