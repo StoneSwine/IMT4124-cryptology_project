@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import math
+import os
 
+from columnar import columnar  # Pretty print tables
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
 # GLOBAL VARIABLES
@@ -16,6 +18,12 @@ class lfsr(list):
   def __init__(self, l):
     super().__init__(l)
     self.degree = max(l)
+
+  def get_polynomial(self):
+    str = "1"
+    for i in reversed(self):
+      str += "+x^{}".format(i)
+    return str
 
   def get_seed(self):
     return self.start_val
@@ -55,11 +63,8 @@ def run_correlation_attack(qi, p0, c, z):
   T = norm.ppf(1 - pf) * math.sqrt(l)
   pm = 1 - norm.cdf((l * (3 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
   Ri = pow(2, z.get_degree())
-  print(
-    "[TASK3]: Information about variables:\n\tpe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {:.1f}\n\tRi: {}".format(pe, pm,
-                                                                                                                 pf,
-                                                                                                                 l, T,
-                                                                                                                 Ri))
+  print("[TASK3]: Information about variables:")
+  print("\tpe: {}\n\tpm: {}\n\tpf: {}\n\tl: {}\n\tT: {:.1f}\n\tRi: {}".format(pe, pm, pf, l, T, Ri))
   print("[TASK3]: Seed | Alpha")
   for i in range(1, Ri):
     z.set_seed(i)
@@ -107,6 +112,13 @@ def task1(plaintextfile, seeds):
   z2.set_seed(seeds[1])
   z3.set_seed(seeds[2])
 
+  print("[TASK1]: Information about LFSRs:")
+
+  data = []
+  for i, name in zip([z1, z2, z3], ["LFSR1", "LFSR2", "LFSR3"]):
+    data.append([name, i.get_polynomial(), bin(i.get_seed())[2:].ljust(i.get_degree(), '0')])
+  print(columnar(data, ["Id", "Polynomial", "Initial state"], no_borders=True))
+
   c = []
   print("[TASK1]: Generating ciphertext from", plaintextfile, "with Geffes generator")
   for y in bitgen(open(plaintextfile, "rb").read()):
@@ -144,7 +156,7 @@ def task3(c):
   print("- " * 10)
   # Bruteforce z2, now that we know the value of z1 and z3
   print("[TASK3]: Commencing bruteforce of z2")
-  print("[TASK3]: Using shannons entrophy to determine the plaintext")
+  print("[TASK3]: Using Shannons entrophy to determine if the plaintext is found")
   for z2_s in range(1, pow(2, z2.get_degree()) + 1):
     for z1_c in z1_cand:
       for z3_c in z3_cand:
@@ -169,6 +181,7 @@ def task4():
 
 
 if __name__ == "__main__":
+  INFILE = os.path.join(os.path.dirname(__file__), INFILE)
   print(" TASK 1 ".center(30, "#"))
   c = task1(INFILE, [Z1S, Z2S, Z3S])  # Geffe's generator
   print(" TASK 3 ".center(30, "#"))
