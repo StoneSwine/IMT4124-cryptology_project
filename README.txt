@@ -1,9 +1,11 @@
 # GeffesGenerator_assessment
 Project in the course IMT4124 - Cryptology. This project will use geffes generator (streamcipher) to encrypt a plaintext file. Then the program shows an ciphertext only attack-method proposed by T. Siegenthaler in 1985 to recover the plaintext. The programIs implemented in python3, which is not the fastest programming language out there and certainly not the best choice when it comesto bruteforcing. On the other hand it is quite easy to debug and write, which is the main reason behind the choice of programming language.
+
 # Installation:
 In a preffered environment, run the follwing command to install the requirements
 $ pip install -r requirements.txt
 $ python3 task.py #run the program
+
 # TASK 1:
 ## The task:
 ## Implementation:
@@ -13,6 +15,8 @@ The function 'task1' reads plaintext from the file specified in the global varia
 ## The task:
 ## Implementation
 
+
 # TASK 4:
 ## The task:
 ## Implementation
+
