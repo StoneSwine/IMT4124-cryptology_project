@@ -54,12 +54,12 @@ class lfsr(list):
 """
 GLOBAL VARIABLES
 """
-INFILE = "plaintextfiles/1000_example.txt"
-Z1S = 69
-Z2S = 20
-Z3S = 990
+INFILE = "plaintextfiles/2000_example.txt"
+Z1S = 891
+Z2S = 100
+Z3S = 78
 
-DEMO = True  # A little cheat to make the bruteforce exit when the right seed is found
+DEMO = False  # A little cheat to make the bruteforce exit when the right seed is found
 INCLUDE_STATISTICS = False  # This takes quite a bit of time
 
 z1 = lfsr([10, 7, 3, 1])
@@ -79,10 +79,11 @@ def proposed_combining_function(z1, z2, z3):
   return (z3 ^ (z1 ^ z2) ^ (z2 & z3))
 
 
-def run_correlation_attack(qi, p0, c, z, pf=0.01):
-  candidates = []
+def run_correlation_attack(qi, p0, c, z, pf=0.002):
+  candidates, tmpcand = [], []
+  c1, c2 = c[:len(c)//2], c[len(c)//2:]
   pe = 1 - (p0 + qi) + 2 * p0 * qi
-  l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
+  l = len(c1)  # This can be varied, depending on how much you are reading, and will influence the rest
   T = norm.ppf(1 - pf) * math.sqrt(l)
   #                                                 standardise variables
   #    1 -  the cumulative density function of (mean / Standard Deviation (square of variance)) =  (survival function)
@@ -91,13 +92,25 @@ def run_correlation_attack(qi, p0, c, z, pf=0.01):
   print("[TASK3]: Information about variables:")
   print(f"\tpe: {pe}\n\tpm: {pm}\n\tpf: {pf}\n\tl: {l} bit\n\tT: {T:.1f}\n\tRi: {Ri}")
   print("[TASK3]: Seed | Alpha")
-  for i in range(1, Ri):
+
+  for i in range(1, 2**Ri-1):
     z.set_seed(i)
-    ham_d = sum([ci ^ z.next_o() for ci in c])
+    ham_d = sum([ci ^ z.next_o() for ci in c1])
     alpha = l - (2 * ham_d)
     if alpha >= T:
       print(f"[TASK3]: {i}  | {alpha}")
-      candidates.append(i)
+      tmpcand.append(i)
+
+  # Loop through the whole period of the seed (initial state) to measure the corrleation(alpha) at different offsets
+  for j in tmpcand:
+    z.set_seed(j)
+    for _ in range(1, 2**Ri-1):
+      ham_d = sum([ci ^ z.next_o() for ci in c2])
+      alpha = l - (2 * ham_d)
+      if alpha >= T:
+        if j not in candidates:
+          candidates.append(j)
+          break
 
   return candidates
 
@@ -184,7 +197,7 @@ def task3(c):
   # Bruteforce z2, now that we know the value of z1 and z3
   print("[TASK3]: Commencing bruteforce of z2")
   print("[TASK3]: Using Shannons entrophy to determine if the plaintext is found")
-  for z2_s in range(1, pow(2, z2.get_degree()) + 1):
+  for z2_s in range(1, pow(2, z2.get_degree()) - 1):
     for z1_c in z1_cand:
       for z3_c in z3_cand:
         print(f"[TASK3]: Testing {z1_c}, {z2_s} and {z3_c}", end="\r")
