@@ -2,6 +2,7 @@
 import math
 import os
 
+import matplotlib.pyplot as plt
 from columnar import columnar  # Pretty print tables
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
@@ -49,11 +50,17 @@ class lfsr(list):
       o_a.append(self.next_o())
     return o_a
 
-# GLOBAL VARIABLES
+
+"""
+GLOBAL VARIABLES
+"""
 INFILE = "plaintextfiles/1000_example.txt"
-Z1S = 123
-Z2S = 90
-Z3S = 577
+Z1S = 69
+Z2S = 20
+Z3S = 990
+
+DEMO = True  # A little cheat to make the bruteforce exit when the right seed is found
+INCLUDE_STATISTICS = False  # This takes quite a bit of time
 
 z1 = lfsr([10, 7, 3, 1])
 z2 = lfsr([20, 15, 12, 8, 6, 5])
@@ -68,16 +75,21 @@ def gg_combining_function(z1, z2, z3):
   return (z3 ^ (z1 & z2) ^ (z2 & z3))
 
 
-def run_correlation_attack(qi, p0, c, z):
+def proposed_combining_function(z1, z2, z3):
+  return (z3 ^ (z1 ^ z2) ^ (z2 & z3))
+
+
+def run_correlation_attack(qi, p0, c, z, pf=0.01):
   candidates = []
   pe = 1 - (p0 + qi) + 2 * p0 * qi
   l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
-  pf = 0.002  # This can be adjusted
   T = norm.ppf(1 - pf) * math.sqrt(l)
-  pm = 1 - norm.cdf((l * (3 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
-  Ri = pow(2, z.get_degree())
+  #                                                 standardise variables
+  #    1 -  the cumulative density function of (mean / Standard Deviation (square of variance)) =  (survival function)
+  pm = 1 - norm.cdf((l * (2 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
+  Ri = z.get_degree()
   print("[TASK3]: Information about variables:")
-  print(f"\tpe: {pe}\n\tpm: {pm}\n\tpf: {pf}\n\tl: {l}\n\tT: {T:.1f}\n\tRi: {Ri}")
+  print(f"\tpe: {pe}\n\tpm: {pm}\n\tpf: {pf}\n\tl: {l} bit\n\tT: {T:.1f}\n\tRi: {Ri}")
   print("[TASK3]: Seed | Alpha")
   for i in range(1, Ri):
     z.set_seed(i)
@@ -145,7 +157,7 @@ def task1(plaintextfile, seeds):
 
 def task3(c):
   # The polynomials are known to the cryptanalyst
-  global z1, z2, z3
+  global z1, z2, z3, Z2S
   q = [0, 0, 0]
 
   # Check correlation from truth table of the combiner function
@@ -188,8 +200,12 @@ def task3(c):
         if ent >= 3.5 and ent <= 5:
           print(f"[TASK3]: Possible seeds | Z1:{z1_c} | Z2:{z2_s} | Z3:{z3_c} | entropy of text: {ent:.2f}")
 
+    if DEMO and z2_s == Z2S:  # Speed up the bruteforce, to make the program finish in reasonable time
+      print(f"[TASK3]: The correct seed is found, stopping the bruteforce for demonstration purposes...")
+      return 0
 
-def task4(INFILE, seeds):
+
+def task4(plaintextfile, seeds):
   global z1, z2, z3
   print("[TASK4]: Initial setup of polynomials..")
 
@@ -198,7 +214,80 @@ def task4(INFILE, seeds):
   z1.set_seed(seeds[0])
   z2.set_seed(seeds[1])
   z3.set_seed(seeds[2])
-  pass
+
+  q = [0, 0, 0]
+
+  # Check correlation from truth table of the combiner function
+  for i in range(8):
+    x = list(map(int, bin(i)[2:].zfill(3)))
+    f = proposed_combining_function(x[0], x[1], x[2])
+    print(x, f)
+    for j in range(3):
+      if x[j] == f:
+        q[j] += 1
+  q = [i / 8 for i in q]
+  print("[TASK4]: correlation from thruth table z1,z2,z3 -> ", q)
+
+
+"""
+FUNCTION TO OBTAIN SOME STATISTICS FROM THE ATTACK
+"""
+
+
+def run_statistics(c):
+  # The polynomials are known to the cryptanalyst
+  global z1, z2, z3, Z1S, Z3S
+  q = [0, 0, 0]
+
+  # Check correlation from truth table of the combiner function
+  for i in range(8):
+    x = list(map(int, bin(i)[2:].zfill(3)))
+    f = gg_combining_function(x[0], x[1], x[2])
+    for j in range(3):
+      if x[j] == f:
+        q[j] += 1
+  q = [i / 8 for i in q]
+
+  p0 = 0.6  # We know this value from the probability of the input language (e.g. english ASCII)
+  fps_z1, fps_z3, pf = [], [], []
+
+  # Vary the probability of false alarm
+  for i in range(1, 50, 3):
+    i = i / 1000
+    z1_cands = run_correlation_attack(q[0], p0, c, z1, i)
+    z3_cands = run_correlation_attack(q[2], p0, c, z3, i)
+    pf.append(i)
+    if Z1S in z1_cands: z1_cands.remove(Z1S)
+    if Z3S in z3_cands: z3_cands.remove(Z3S)
+    fps_z1.append(len(z1_cands))
+    fps_z3.append(len(z3_cands))
+  print(fps_z1, fps_z3, pf)
+  plt.plot(pf, fps_z1, label="Z1")
+  plt.plot(pf, fps_z3, label="Z3")
+  plt.xlabel("Pf - value")
+  plt.ylabel("False positives")
+  plt.legend()
+  plt.show()
+
+  fps_z1, fps_z3, l = [], [], []
+
+  # Vary the length of the input file
+  for i in range(1000, len(c), len(c) // 20):
+    z1_cands = run_correlation_attack(q[0], p0, c[:i], z1, 0.01)  # i = 0.01
+    z3_cands = run_correlation_attack(q[2], p0, c[:i], z3, 0.01)
+    l.append(len(c[:i]))
+    if Z1S in z1_cands: z1_cands.remove(Z1S)
+    if Z3S in z3_cands: z3_cands.remove(Z3S)
+    fps_z1.append(len(z1_cands))
+    fps_z3.append(len(z3_cands))
+
+  print(fps_z1, fps_z3, l)
+  plt.plot(l, fps_z1, label="Z1")
+  plt.plot(l, fps_z3, label="Z3")
+  plt.xlabel("Ciphertext bits")
+  plt.ylabel("False positives")
+  plt.legend()
+  plt.show()
 
 
 """
@@ -213,3 +302,6 @@ if __name__ == "__main__":
   task3(c)
   print(" TASK 4 ".center(30, "#"))
   task4(INFILE, [Z1S, Z2S, Z3S])  # Improved Geffe's generator
+  if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
+    print(" RUNNING STATISTICS ".center(30, "#"))
+    run_statistics(c)

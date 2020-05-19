@@ -15,6 +15,43 @@ The function 'task1' reads plaintext from the file specified in the global varia
 ## The task:
 ## Implementation
 
+def run_correlation_attack(qi, p0, l, pf, ri):
+...   pe = 1 - (p0 + qi) + 2 * p0 * qi
+...   T = norm.ppf(1 - pf) * math.sqrt(l)
+...   pm = 1 - norm.cdf((l * (2 * pe - 1) - T) / (math.sqrt(4 * l * pe * (1 - pe))))
+...   n = (((1/math.sqrt(2))*math.sqrt(math.log(2**(ri-1))) + pm*math.sqrt(pe*(1-pe))) / (pe - 0.5))**2
+...   print(n)
+
+run_correlation_attack(0.75, 0.6, 8000, 0.002, 20)
+0.75 0.6
+[TASK3]: Information about variables:
+	pe: 0.5499999999999998
+	pm: 5.415035086997477e-10
+	pf: 0.002
+	l: 8000 bit
+	T: 257.4
+
+2633.959286680847
+run_correlation_attack(0.75, 0.6, 8000, 0.002, 10)
+0.75 0.6
+[TASK3]: Information about variables:
+	pe: 0.5499999999999998
+	pm: 5.415035086997477e-10
+	pf: 0.002
+	l: 8000 bit
+	T: 257.4
+
+1247.6649253885355
+run_correlation_attack(0.75, 0.6, 8000, 0.002, 11)
+0.75 0.6
+[TASK3]: Information about variables:
+	pe: 0.5499999999999998
+	pm: 5.415035086997477e-10
+	pf: 0.002
+	l: 8000 bit
+	T: 257.4
+
+1386.2943615211143
 
 # TASK 4:
 ## The task:
