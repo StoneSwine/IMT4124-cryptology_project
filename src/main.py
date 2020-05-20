@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import math
-import os
+import math  # math innit
+import os  # get full filepath
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # Create graphs
 from columnar import columnar  # Pretty print tables
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
@@ -37,8 +37,6 @@ class lfsr(list):
     for p in self[1:]:  # loop the polynomial degrees (index of bits to xor)
       b ^= ((self.reg >> p - 1) & 1)  # shift the register accordingly and get the LSbit to XOR with the other ones
     self.reg = (self.reg >> 1 | b << (self.degree - 1))  # Shift the register and apply the new bit (will also pad)
-    # TODO: How to determine the length of the LFSR register?
-    # Assumes it is as long as the degree of the polynomial-1
     return out
 
   def get_degree(self):
@@ -54,13 +52,13 @@ class lfsr(list):
 """
 GLOBAL VARIABLES
 """
-INFILE = "plaintextfiles/2000_example.txt"
-Z1S = 891
-Z2S = 100
-Z3S = 78
+INFILE = "plaintextfiles/4000_example.txt"
+Z1S = 69
+Z2S = 190
+Z3S = 574
 
-DEMO = False  # A little cheat to make the bruteforce exit when the right seed is found
-INCLUDE_STATISTICS = False  # This takes quite a bit of time
+DEMO = True  # A little cheat to make the bruteforce exit when the right seed is found
+INCLUDE_STATISTICS = True  # This takes quite a bit of time
 
 z1 = lfsr([10, 7, 3, 1])
 z2 = lfsr([20, 15, 12, 8, 6, 5])
@@ -80,10 +78,9 @@ def proposed_combining_function(z1, z2, z3):
 
 
 def run_correlation_attack(qi, p0, c, z, pf=0.002):
-  candidates, tmpcand = [], []
-  c1, c2 = c[:len(c)//2], c[len(c)//2:]
+  candidates = []
   pe = 1 - (p0 + qi) + 2 * p0 * qi
-  l = len(c1)  # This can be varied, depending on how much you are reading, and will influence the rest
+  l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
   T = norm.ppf(1 - pf) * math.sqrt(l)
   #                                                 standardise variables
   #    1 -  the cumulative density function of (mean / Standard Deviation (square of variance)) =  (survival function)
@@ -93,25 +90,12 @@ def run_correlation_attack(qi, p0, c, z, pf=0.002):
   print(f"\tpe: {pe}\n\tpm: {pm}\n\tpf: {pf}\n\tl: {l} bit\n\tT: {T:.1f}\n\tRi: {Ri}")
   print("[TASK3]: Seed | Alpha")
 
-  for i in range(1, 2**Ri-1):
+  for i in range(1, 2 ** Ri - 1):
     z.set_seed(i)
-    ham_d = sum([ci ^ z.next_o() for ci in c1])
-    alpha = l - (2 * ham_d)
+    alpha = l - (2 * sum([ci ^ z.next_o() for ci in c]))
     if alpha >= T:
       print(f"[TASK3]: {i}  | {alpha}")
-      tmpcand.append(i)
-
-  # Loop through the whole period of the seed (initial state) to measure the corrleation(alpha) at different offsets
-  for j in tmpcand:
-    z.set_seed(j)
-    for _ in range(1, 2**Ri-1):
-      ham_d = sum([ci ^ z.next_o() for ci in c2])
-      alpha = l - (2 * ham_d)
-      if alpha >= T:
-        if j not in candidates:
-          candidates.append(j)
-          break
-
+      candidates.append(i)
   return candidates
 
 
@@ -267,16 +251,15 @@ def run_statistics(c):
   # Vary the probability of false alarm
   for i in range(1, 50, 3):
     i = i / 1000
-    z1_cands = run_correlation_attack(q[0], p0, c, z1, i)
-    z3_cands = run_correlation_attack(q[2], p0, c, z3, i)
+    z1_cands = run_correlation_attack(q[0], p0, c[:8000], z1, i)
+    z3_cands = run_correlation_attack(q[2], p0, c[:8000], z3, i)
     pf.append(i)
     if Z1S in z1_cands: z1_cands.remove(Z1S)
     if Z3S in z3_cands: z3_cands.remove(Z3S)
-    fps_z1.append(len(z1_cands))
-    fps_z3.append(len(z3_cands))
-  print(fps_z1, fps_z3, pf)
-  plt.plot(pf, fps_z1, label="Z1")
-  plt.plot(pf, fps_z3, label="Z3")
+    fps_z1.append(len(z1_cands) / (2 ** z1.get_degree() - 1))
+    fps_z3.append(len(z3_cands) / (2 ** z3.get_degree() - 1))
+  plt.plot(pf, fps_z1, label="L1")
+  plt.plot(pf, fps_z3, label="L3")
   plt.xlabel("Pf - value")
   plt.ylabel("False positives")
   plt.legend()
@@ -285,22 +268,22 @@ def run_statistics(c):
   fps_z1, fps_z3, l = [], [], []
 
   # Vary the length of the input file
-  for i in range(1000, len(c), len(c) // 20):
+  for i in range(400, len(c), len(c) // 10):
     z1_cands = run_correlation_attack(q[0], p0, c[:i], z1, 0.01)  # i = 0.01
     z3_cands = run_correlation_attack(q[2], p0, c[:i], z3, 0.01)
     l.append(len(c[:i]))
     if Z1S in z1_cands: z1_cands.remove(Z1S)
     if Z3S in z3_cands: z3_cands.remove(Z3S)
-    fps_z1.append(len(z1_cands))
-    fps_z3.append(len(z3_cands))
-
-  print(fps_z1, fps_z3, l)
-  plt.plot(l, fps_z1, label="Z1")
-  plt.plot(l, fps_z3, label="Z3")
+    fps_z1.append(len(z1_cands) / (2 ** z1.get_degree() - 1))
+    fps_z3.append(len(z3_cands) / (2 ** z3.get_degree() - 1))
+  plt.plot(l, fps_z1, label="L1")
+  plt.plot(l, fps_z3, label="L3")
   plt.xlabel("Ciphertext bits")
   plt.ylabel("False positives")
   plt.legend()
   plt.show()
+  print(
+    f"Mean percent of false positives: L_1:{(sum(fps_z1) / len(fps_z1)):.4f}, L_3:{(sum(fps_z3) / len(fps_z3)):.4f}")
 
 
 """
@@ -312,7 +295,7 @@ if __name__ == "__main__":
   print(" TASK 1 ".center(30, "#"))
   c = task1(INFILE, [Z1S, Z2S, Z3S])  # Geffe's generator
   print(" TASK 3 ".center(30, "#"))
-  task3(c)
+  # task3(c)
   print(" TASK 4 ".center(30, "#"))
   task4(INFILE, [Z1S, Z2S, Z3S])  # Improved Geffe's generator
   if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
