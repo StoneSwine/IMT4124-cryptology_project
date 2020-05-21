@@ -70,8 +70,8 @@ Z1S = 69
 Z2S = 190
 Z3S = 574
 
-DEMO = True  # A little cheat to make the bruteforce exit when the right seed is found
-INCLUDE_STATISTICS = True  # This takes quite a bit of time
+DEMO = False  # A little cheat to make the bruteforce exit when the right seed is found
+INCLUDE_STATISTICS = False  # This takes quite a bit of time
 
 z1 = lfsr([10, 7, 3, 1])
 z2 = lfsr([20, 15, 12, 8, 6, 5])
@@ -313,6 +313,6 @@ if __name__ == "__main__":
   task3(c)
   print(" TASK 4 ".center(30, "#"))
   task4(INFILE, [Z1S, Z2S, Z3S])  # Improved Geffe's generator
-  #if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
-  #  print(" RUNNING STATISTICS ".center(30, "#"))
-  #  run_statistics(c)
+  if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
+    print(" RUNNING STATISTICS ".center(30, "#"))
+    run_statistics(c)
