@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import math  # math innit
 import os  # get full filepath
+import numpy as np
 
 import matplotlib.pyplot as plt  # Create graphs
 from columnar import columnar  # Pretty print tables
@@ -11,6 +12,7 @@ LFSR CLASS
 """
 
 
+#initialized with the polynomial, and the seed are added dynamically
 class lfsr(list):
   """initialized with the polynomial, and the seed are added dynamically
   """
@@ -25,6 +27,9 @@ class lfsr(list):
       str += f"+x^{i}"
     return str
 
+  def get_current_state(self):
+    return self.reg
+
   def get_seed(self):
     return self.start_val
 
@@ -33,8 +38,9 @@ class lfsr(list):
 
   def next_o(self):
     out = self.reg & 1  # get the LS bit
-    b = ((self.reg >> self[0] - 1) & 1)  # get the first bit to XOR
-    for p in self[1:]:  # loop the polynomial degrees (index of bits to xor)
+    b = 0
+    for p in self:  # loop the polynomial degrees (index of bits to xor)
+      p = self.degree+1 - p
       b ^= ((self.reg >> p - 1) & 1)  # shift the register accordingly and get the LSbit to XOR with the other ones
     self.reg = (self.reg >> 1 | b << (self.degree - 1))  # Shift the register and apply the new bit (will also pad)
     return out
@@ -48,11 +54,18 @@ class lfsr(list):
       o_a.append(self.next_o())
     return o_a
 
+  def run_period(self):
+    ret = []
+    while True:
+      ret.append(self.next_o())
+      if self.reg == self.start_val:
+        return ret
+
 
 """
 GLOBAL VARIABLES
 """
-INFILE = "plaintextfiles/4000_example.txt"
+INFILE = "plaintextfiles/1000_example.txt"
 Z1S = 69
 Z2S = 190
 Z3S = 574
@@ -89,13 +102,15 @@ def run_correlation_attack(qi, p0, c, z, pf=0.002):
   print("[TASK3]: Information about variables:")
   print(f"\tpe: {pe}\n\tpm: {pm}\n\tpf: {pf}\n\tl: {l} bit\n\tT: {T:.1f}\n\tRi: {Ri}")
   print("[TASK3]: Seed | Alpha")
-
-  for i in range(1, 2 ** Ri - 1):
-    z.set_seed(i)
-    alpha = l - (2 * sum([ci ^ z.next_o() for ci in c]))
+  z.set_seed(1)
+  period = np.array(z.run_period())
+  z.set_seed(1)
+  for i in range(len(period)):
+    alpha = l - (2 * sum([ci ^ zi for ci, zi in zip(c, period.take(range(i, i+l), mode="wrap"))]))
     if alpha >= T:
-      print(f"[TASK3]: {i}  | {alpha}")
-      candidates.append(i)
+      print(f"[TASK3]: {z.get_current_state()}  | {alpha}")
+      candidates.append(z.get_current_state())
+    z.next_o()
   return candidates
 
 
@@ -295,9 +310,9 @@ if __name__ == "__main__":
   print(" TASK 1 ".center(30, "#"))
   c = task1(INFILE, [Z1S, Z2S, Z3S])  # Geffe's generator
   print(" TASK 3 ".center(30, "#"))
-  # task3(c)
+  task3(c)
   print(" TASK 4 ".center(30, "#"))
   task4(INFILE, [Z1S, Z2S, Z3S])  # Improved Geffe's generator
-  if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
-    print(" RUNNING STATISTICS ".center(30, "#"))
-    run_statistics(c)
+  #if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
+  #  print(" RUNNING STATISTICS ".center(30, "#"))
+  #  run_statistics(c)
