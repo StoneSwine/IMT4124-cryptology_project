@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import math  # math innit
 import os  # get full filepath
-import numpy as np
 
 import matplotlib.pyplot as plt  # Create graphs
+import numpy as np
 from columnar import columnar  # Pretty print tables
 from scipy.stats import norm  # norm.cdf(1.96) and norm.ppf(norm.cdf(1.96))
 
@@ -12,7 +12,7 @@ LFSR CLASS
 """
 
 
-#initialized with the polynomial, and the seed are added dynamically
+# initialized with the polynomial, and the seed are added dynamically
 class lfsr(list):
   """initialized with the polynomial, and the seed are added dynamically
   """
@@ -22,12 +22,19 @@ class lfsr(list):
     self.degree = max(l)
 
   def get_polynomial(self):
+    """
+    Prettyprint the polynomial
+    :return: The polynomial in a nice format
+    """
     str = "1"
     for i in reversed(self):
       str += f"+x^{i}"
     return str
 
   def get_current_state(self):
+    """
+    :return: he current value of the register in int
+    """
     return self.reg
 
   def get_seed(self):
@@ -37,24 +44,38 @@ class lfsr(list):
     self.reg = self.start_val = seed
 
   def next_o(self):
+    """
+    Shift the register one bit
+    :return: The output bit from that shift
+    """
     out = self.reg & 1  # get the LS bit
     b = 0
     for p in self:  # loop the polynomial degrees (index of bits to xor)
-      p = self.degree+1 - p
+      p = self.degree + 1 - p
       b ^= ((self.reg >> p - 1) & 1)  # shift the register accordingly and get the LSbit to XOR with the other ones
     self.reg = (self.reg >> 1 | b << (self.degree - 1))  # Shift the register and apply the new bit (will also pad)
     return out
 
   def get_degree(self):
+    """
+    :return: The degree of the LFSR
+    """
     return self.degree
 
   def get_x_rounds(self, x=1):
+    """
+    :param x: Number of rounds to run (default 1)
+    :return: The output from the given rounds
+    """
     o_a = []
     for _ in range(x):
       o_a.append(self.next_o())
     return o_a
 
   def run_period(self):
+    """
+    :return: The output from the whole period of the LFSR
+    """
     ret = []
     while True:
       ret.append(self.next_o())
@@ -83,6 +104,13 @@ HELPER FUNCTIONS
 
 
 def gg_combining_function(z1, z2, z3):
+  """
+  Geffes generator combining function
+  :param z1: Output bit from L1
+  :param z2: Output bit from L2
+  :param z3: Output bit from L3
+  :return: Output X from Geffes generator
+  """
   return (z3 ^ (z1 & z2) ^ (z2 & z3))
 
 
@@ -91,6 +119,15 @@ def proposed_combining_function(z1, z2, z3):
 
 
 def run_correlation_attack(qi, p0, c, z, pf=0.002):
+  """
+  Perform correlation attack on a LFSR
+  :param qi: The correlation from truth table between the register and the output from geffes generator
+  :param p0: Probability of the input laguage
+  :param c: the ciphertext in array of bits
+  :param z: an instance of "lfsr" for the register to attack
+  :param pf: probability of false positives
+  :return: possible candidate initial states
+  """
   candidates = []
   pe = 1 - (p0 + qi) + 2 * p0 * qi
   l = len(c)  # This can be varied, depending on how much you are reading, and will influence the rest
@@ -106,7 +143,7 @@ def run_correlation_attack(qi, p0, c, z, pf=0.002):
   period = np.array(z.run_period())
   z.set_seed(1)
   for i in range(len(period)):
-    alpha = l - (2 * sum([ci ^ zi for ci, zi in zip(c, period.take(range(i, i+l), mode="wrap"))]))
+    alpha = l - (2 * sum([ci ^ zi for ci, zi in zip(c, period.take(range(i, i + l), mode="wrap"))]))
     if alpha >= T:
       print(f"[TASK3]: {z.get_current_state()}  | {alpha}")
       candidates.append(z.get_current_state())
@@ -114,14 +151,23 @@ def run_correlation_attack(qi, p0, c, z, pf=0.002):
   return candidates
 
 
-# Generate bits from an input (bytes) => Generator object
 def bitgen(x):
+  """
+  Generate bits from an input
+  :param x: bytes
+  :return: Generator object
+  """
   for c in x:
     for i in range(8):
       yield int((c & (0x80 >> i)) != 0)
 
 
-def bits2string(bits=None):  # This function is taken from https://stackoverflow.com/a/10238140
+def bits2string(bits=None):
+  """
+  This function is taken from https://stackoverflow.com/a/10238140
+  :param bits: Array of bits
+  :return: String
+  """
   chars = []
   for b in range(len(bits) // 8):
     byte = bits[b * 8:(b + 1) * 8]
@@ -129,10 +175,14 @@ def bits2string(bits=None):  # This function is taken from https://stackoverflow
   return ''.join(chars)
 
 
-def entropy(string):  # This function is taken from https://stackoverflow.com/a/2979208
-  # get probability of chars in string
+def entropy(string):
+  """
+  This function is taken from https://stackoverflow.com/a/2979208
+  get probability of chars in string and calculate the entrophy
+  :param string:
+  :return: entrophy in float
+  """
   prob = [float(string.count(c)) / len(string) for c in dict.fromkeys(list(string))]
-  # calculate the entropy
   entropy = - sum([p * math.log(p) / math.log(2.0) for p in prob])
   return entropy
 
@@ -143,6 +193,12 @@ THE MAIN TASKS
 
 
 def task1(plaintextfile, seeds):
+  """
+  TASK 1: Generate ciphertext from input file, using geffes generator as the pseudorandom function / input
+  :param plaintextfile: filename in string
+  :param seeds: array of seeds for the three registers
+  :return: ciphertext in array of bits
+  """
   global z1, z2, z3
   print("[TASK1]: Initial setup of polynomials..")
 
@@ -153,7 +209,6 @@ def task1(plaintextfile, seeds):
   z3.set_seed(seeds[2])
 
   print("[TASK1]: Information about LFSRs:")
-
   data = []
   for i, name in zip([z1, z2, z3], ["LFSR1", "LFSR2", "LFSR3"]):
     data.append(
@@ -168,6 +223,11 @@ def task1(plaintextfile, seeds):
 
 
 def task3(c):
+  """
+  TASK3: Break Geffes generator using correlation attack
+  :param c: ciphertext in array of bits
+  :return: int
+  """
   # The polynomials are known to the cryptanalyst
   global z1, z2, z3, Z2S
   q = [0, 0, 0]
@@ -218,6 +278,12 @@ def task3(c):
 
 
 def task4(plaintextfile, seeds):
+  """
+  TASK4: Modifications to the non linear combining function will have a different impact on the correlation
+  :param plaintextfile: filename in string
+  :param seeds: Seeds for the initial states of the three LFSRs
+  :return:
+  """
   global z1, z2, z3
   print("[TASK4]: Initial setup of polynomials..")
 
@@ -247,6 +313,11 @@ FUNCTION TO OBTAIN SOME STATISTICS FROM THE ATTACK
 
 
 def run_statistics(c):
+  """
+  Get some statistics from the attacks on geffes generator
+  :param c: ciphertext in array of bits
+  :return:
+  """
   # The polynomials are known to the cryptanalyst
   global z1, z2, z3, Z1S, Z3S
   q = [0, 0, 0]
