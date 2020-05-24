@@ -53,7 +53,7 @@ for i in range(8):
 
 x_nlot = [[x[0] ^ x[1], x[0] ^ x[2], x[1] ^ x[2]] for x in x_vals]
 
-for f_int in range(int("1" * 8, 2)):
+for f_int in range(1, int("1" * 8, 2)):
   bin_f = list(map(int, bin(f_int)[2:].zfill(8)))
   if sum(bin_f) != 4 and BALANCED:  # balanced
     continue
@@ -62,7 +62,8 @@ for f_int in range(int("1" * 8, 2)):
     q1 = get_correlation(x_vals, bin_f)
     q2 = get_correlation(x_nlot, bin_f)
     bc = bin_f.count(1)
-    if q1.count(0.5) == 2 and q2.count(0.5) == 2:
+    anf = get_ANF(''.join(map(str, bin_f)))
+    nlinc = max([ai.count('1') for ai in anf])
+    if q1.count(0.5) >= 2 and q2.count(0.5) >= 2 and nlinc == 2:
       print(f"f(x):{bin_f} --> {bc}\n\tcorrelation immune order 1:{q1}\n\tcorrelation immune order 2:{q2}")
-      anf = get_ANF(''.join(map(str, bin_f)))
-      print(f"\tNon linear order: {max([ai.count('1') for ai in anf])} --> {anf}\n")
+      print(f"\tNon linear order: {nlinc} --> {anf}\n")
