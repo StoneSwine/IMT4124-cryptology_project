@@ -7,6 +7,10 @@ import math
 
 BALANCED = False
 
+"""
+Functions
+"""
+
 
 def find(s, ch):
   return [x for x, ltr in enumerate(s) if ltr == ch]
@@ -47,6 +51,10 @@ def get_correlation(x, f):
   return [i / 8 for i in q]
 
 
+"""
+Main
+"""
+
 x_vals = []
 for i in range(8):
   x_vals.append(list(map(int, bin(i)[2:].zfill(3))))
@@ -58,12 +66,15 @@ for f_int in range(1, int("1" * 8, 2)):
   if sum(bin_f) != 4 and BALANCED:  # balanced
     continue
   else:
-    # Correlation order two
+    # Correlation order one and two
     q1 = get_correlation(x_vals, bin_f)
     q2 = get_correlation(x_nlot, bin_f)
+    # balanced-count
     bc = bin_f.count(1)
+    # ANF
     anf = get_ANF(''.join(map(str, bin_f)))
     nlinc = max([ai.count('1') for ai in anf])
+    # Adjust this according to the needs:
     if q1.count(0.5) >= 2 and q2.count(0.5) >= 2 and nlinc == 2:
       print(f"f(x):{bin_f} --> {bc}\n\tcorrelation immune order 1:{q1}\n\tcorrelation immune order 2:{q2}")
       print(f"\tNon linear order: {nlinc} --> {anf}\n")
