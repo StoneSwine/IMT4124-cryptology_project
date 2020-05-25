@@ -114,10 +114,6 @@ def gg_combining_function(z1, z2, z3):
   return (z3 ^ (z1 & z2) ^ (z2 & z3))
 
 
-def proposed_combining_function(z1, z2, z3):
-  return (z3 ^ (z1 ^ z2) ^ (z2 & z3))
-
-
 def run_correlation_attack(qi, p0, c, z, pf=0.002):
   """
   Perform correlation attack on a LFSR
@@ -244,7 +240,6 @@ def task3(c):
 
   p0 = 0.6  # We know this value from the probability of the input language (e.g. english ASCII)
 
-  # Can we multithread this --> How to get the return value -> Is there something easier?
   print("[TASK3]: Running correlation attack on z1")
   z1_cand = run_correlation_attack(q[0], p0, c, z1)
   print(f"[TASK3]: z1-candidates: {z1_cand}")
@@ -275,36 +270,6 @@ def task3(c):
     if DEMO and z2_s == Z2S:  # Speed up the bruteforce, to make the program finish in reasonable time
       print(f"[TASK3]: The correct seed is found, stopping the bruteforce for demonstration purposes...")
       return 0
-
-
-def task4(plaintextfile, seeds):
-  """
-  TASK4: Modifications to the non linear combining function will have a different impact on the correlation
-  :param plaintextfile: filename in string
-  :param seeds: Seeds for the initial states of the three LFSRs
-  :return:
-  """
-  global z1, z2, z3
-  print("[TASK4]: Initial setup of polynomials..")
-
-  # set the key / seed values for the LFSR's (needs to be less than 2^(length of LFSR)
-  # THis is the key!:
-  z1.set_seed(seeds[0])
-  z2.set_seed(seeds[1])
-  z3.set_seed(seeds[2])
-
-  q = [0, 0, 0]
-
-  # Check correlation from truth table of the combiner function
-  for i in range(8):
-    x = list(map(int, bin(i)[2:].zfill(3)))
-    f = proposed_combining_function(x[0], x[1], x[2])
-    print(x, f)
-    for j in range(3):
-      if x[j] == f:
-        q[j] += 1
-  q = [i / 8 for i in q]
-  print("[TASK4]: correlation from thruth table z1,z2,z3 -> ", q)
 
 
 """
@@ -382,8 +347,6 @@ if __name__ == "__main__":
   c = task1(INFILE, [Z1S, Z2S, Z3S])  # Geffe's generator
   print(" TASK 3 ".center(30, "#"))
   task3(c)
-  print(" TASK 4 ".center(30, "#"))
-  task4(INFILE, [Z1S, Z2S, Z3S])  # Improved Geffe's generator
   if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
     print(" RUNNING STATISTICS ".center(30, "#"))
     run_statistics(c)
