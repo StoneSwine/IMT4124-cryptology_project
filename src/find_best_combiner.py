@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 [TASK 4]:
   This code help to find an improved combiner function (less correlation), than the one in Geffe's generator
@@ -5,7 +6,13 @@
 """
 import math
 
+"""
+Change accordingly:
+"""
 BALANCED = False
+CORR_RES_ORD_ONE = 2
+CORR_RES_ORD_TWO = 1
+NON_LIN_ORD = 2
 
 """
 Functions
@@ -75,6 +82,6 @@ for f_int in range(1, int("1" * 8, 2)):
     anf = get_ANF(''.join(map(str, bin_f)))
     nlinc = max([ai.count('1') for ai in anf])
     # Adjust this according to the needs:
-    if q1.count(0.5) >= 2 and q2.count(0.5) >= 2 and nlinc == 2:
+    if q1.count(0.5) >= CORR_RES_ORD_ONE and q2.count(0.5) >= CORR_RES_ORD_TWO and nlinc == NON_LIN_ORD:
       print(f"f(x):{bin_f} --> {bc}\n\tcorrelation immune order 1:{q1}\n\tcorrelation immune order 2:{q2}")
       print(f"\tNon linear order: {nlinc} --> {anf}\n")
