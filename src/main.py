@@ -91,7 +91,7 @@ Z1S = 69
 Z2S = 190
 Z3S = 574
 
-DEMO = False  # A little cheat to make the bruteforce exit when the right seed is found
+DEMO = True  # A little cheat to make the bruteforce exit when the right seed is found
 INCLUDE_STATISTICS = False  # This takes quite a bit of time
 
 z1 = lfsr([10, 7, 3, 1])
