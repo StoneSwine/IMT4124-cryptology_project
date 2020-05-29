@@ -14,7 +14,7 @@ LFSR CLASS
 
 # initialized with the polynomial, and the seed are added dynamically
 class lfsr(list):
-  """initialized with the polynomial, and the seed are added dynamically
+  """initialized with the polynomial, initial state (seed) are added dynamically
   """
 
   def __init__(self, l):
@@ -343,10 +343,13 @@ MAIN
 
 if __name__ == "__main__":
   INFILE = os.path.join(os.path.dirname(__file__), INFILE)
+
   print(" TASK 1 ".center(30, "#"))
   c = task1(INFILE, [Z1S, Z2S, Z3S])  # Geffe's generator
+
   print(" TASK 3 ".center(30, "#"))
   task3(c)
+
   if INCLUDE_STATISTICS:  # THIS TAKES QUITE A LOT OF TIME
     print(" RUNNING STATISTICS ".center(30, "#"))
     run_statistics(c)

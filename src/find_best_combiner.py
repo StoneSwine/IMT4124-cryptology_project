@@ -10,8 +10,8 @@ import math
 Change accordingly:
 """
 BALANCED = False
-CORR_RES_ORD_ONE = 2
-CORR_RES_ORD_TWO = 1
+CORR_RES_ORD_ONE = 3
+CORR_RES_ORD_TWO = 0
 NON_LIN_ORD = 2
 
 """
