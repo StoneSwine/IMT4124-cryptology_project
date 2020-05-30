@@ -86,7 +86,7 @@ class lfsr(list):
 """
 GLOBAL VARIABLES
 """
-INFILE = "plaintextfiles/1000_example.txt"
+INFILE = "plaintextfiles/4000_example.txt"
 Z1S = 69
 Z2S = 190
 Z3S = 574
@@ -309,8 +309,8 @@ def run_statistics(c):
     if Z3S in z3_cands: z3_cands.remove(Z3S)
     fps_z1.append(len(z1_cands) / (2 ** z1.get_degree() - 1))
     fps_z3.append(len(z3_cands) / (2 ** z3.get_degree() - 1))
-  plt.plot(pf, fps_z1, label="L1")
-  plt.plot(pf, fps_z3, label="L3")
+  plt.plot(pf, fps_z1, label="R1")
+  plt.plot(pf, fps_z3, label="R3")
   plt.xlabel("Pf - value")
   plt.ylabel("False positives")
   plt.legend()
@@ -327,8 +327,8 @@ def run_statistics(c):
     if Z3S in z3_cands: z3_cands.remove(Z3S)
     fps_z1.append(len(z1_cands) / (2 ** z1.get_degree() - 1))
     fps_z3.append(len(z3_cands) / (2 ** z3.get_degree() - 1))
-  plt.plot(l, fps_z1, label="L1")
-  plt.plot(l, fps_z3, label="L3")
+  plt.plot(l, fps_z1, label="R1")
+  plt.plot(l, fps_z3, label="R3")
   plt.xlabel("Ciphertext bits")
   plt.ylabel("False positives")
   plt.legend()
